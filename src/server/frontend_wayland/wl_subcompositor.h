@@ -66,6 +66,8 @@ public:
 
     WlSurface::Position transform_point(geometry::Point point);
 
+    std::unique_ptr<WlSurface, std::function<void(WlSurface*)>> const parent;
+
 private:
     void set_position(int32_t x, int32_t y) override;
     void place_above(struct wl_resource* sibling) override;
@@ -82,7 +84,6 @@ private:
     WlSurface* const surface;
     // manages parent/child relationship, but does not manage parent's memory
     // see WlSurface::add_child() for details
-    std::unique_ptr<WlSurface, std::function<void(WlSurface*)>> const parent;
     std::shared_ptr<bool> const parent_destroyed;
     bool synchronized_;
     std::experimental::optional<WlSurfaceState> cached_state;

@@ -89,6 +89,7 @@ mf::WlSurface::WlSurface(
         executor{executor},
         null_role{this},
         role{&null_role},
+        subsurface{nullptr},
         destroyed{std::make_shared<bool>(false)}
 {
     // wl_surface is specified to act in mailbox mode
@@ -216,6 +217,87 @@ void mf::WlSurface::add_destroy_listener(void const* key, std::function<void()> 
 void mf::WlSurface::remove_destroy_listener(void const* key)
 {
     destroy_listeners.erase(key);
+}
+
+void mf::WlSurface::move_child_above_sibling(WlSubsurface* child, WlSurface* sibling)
+{
+    std::vector<WlSubsurface*>::iterator child_pos;
+
+    if (!child || !child->parent || !sibling || !sibling->subsurface)
+    {
+        log_warning("Invalid surface data provided for move_above");
+        return;
+    }
+
+    if ((child_pos = std::find(child->parent->children.begin(), child->parent->children.end(), child)) == child->parent->children.end())
+    {
+        log_warning("Child subsurface not found among children");
+        return;
+    }
+
+    if (std::find(child->parent->children.begin(), child->parent->children.end(), sibling->subsurface) == child->parent->children.end())
+    {
+        log_warning("Sibling subsurface not found among children");
+        return;
+    }
+
+    child->parent->children.erase(child_pos);
+
+    if (!sibling->subsurface)
+    {
+        child->parent->children.insert(child->parent->children.begin(), child);
+        return;
+    }
+
+    for (auto it = child->parent->children.begin(); it != child->parent->children.end(); it++)
+    {
+        if (*it != sibling->subsurface)
+            continue;
+
+        child->parent->children.insert(++it, child);
+        break;
+    }
+}
+
+void mf::WlSurface::move_child_below_sibling(WlSubsurface* child, WlSurface* sibling)
+{
+    std::vector<WlSubsurface*>::iterator child_pos;
+
+    if (!child || !child->parent || !sibling || !sibling->subsurface)
+    {
+        log_warning("Invalid surface data provided for move_below");
+        return;
+    }
+
+    if ((child_pos = std::find(child->parent->children.begin(), child->parent->children.end(), child)) == child->parent->children.end())
+    {
+        log_warning("Child subsurface not found among children");
+        return;
+    }
+
+    if (std::find(child->parent->children.begin(), child->parent->children.end(), sibling->subsurface) == child->parent->children.end())
+    {
+        log_warning("Sibling subsurface not found among children");
+        return;
+    }
+
+    child->parent->children.erase(child_pos);
+
+    for (auto it = child->parent->children.begin(); it != child->parent->children.end(); it++)
+    {
+        if (*it != sibling->subsurface)
+            continue;
+
+        if (it == child->parent->children.begin())
+        {
+            child->parent->children.insert(it, child);
+        }
+        else
+        {
+            child->parent->children.insert(--it, child);
+        }
+        break;
+    }
 }
 
 mf::WlSurface* mf::WlSurface::from(wl_resource* resource)

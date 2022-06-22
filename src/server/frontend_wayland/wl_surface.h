@@ -144,6 +144,11 @@ public:
     void add_destroy_listener(void const* key, std::function<void()> listener);
     void remove_destroy_listener(void const* key);
 
+    void set_subsurface(WlSubsurface* subsurface) { this->subsurface = subsurface; }
+    void move_child_above_sibling(WlSubsurface* child, WlSurface* sibling);
+    void move_child_below_sibling(WlSubsurface* child, WlSurface* sibling);
+
+
     std::shared_ptr<scene::Session> const session;
     std::shared_ptr<compositor::BufferStream> const stream;
 
@@ -155,6 +160,7 @@ private:
 
     NullWlSurfaceRole null_role;
     WlSurfaceRole* role;
+    WlSubsurface* subsurface;
     std::vector<WlSubsurface*> children; // ordering is from bottom to top
 
     WlSurfaceState pending;

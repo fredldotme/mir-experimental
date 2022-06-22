@@ -73,12 +73,13 @@ void mf::WlSubcompositorInstance::get_subsurface(
 
 mf::WlSubsurface::WlSubsurface(wl_resource* new_subsurface, WlSurface* surface, WlSurface* parent_surface)
     : wayland::Subsurface(new_subsurface, Version<1>()),
-      surface{surface},
       parent{parent_surface->add_child(this)},
+      surface{surface},
       parent_destroyed{parent_surface->destroyed_flag()},
       synchronized_{true}
 {
     surface->set_role(this);
+    surface->set_subsurface(this);
     surface->pending_invalidate_surface_data();
 }
 
@@ -87,6 +88,7 @@ mf::WlSubsurface::~WlSubsurface()
     // unique pointer automatically removes `this` from parent child list
 
     surface->clear_role();
+    surface->set_subsurface(nullptr);
     refresh_surface_data_now();
 }
 
@@ -128,14 +130,26 @@ void mf::WlSubsurface::set_position(int32_t x, int32_t y)
 
 void mf::WlSubsurface::place_above(struct wl_resource* sibling)
 {
-    (void)sibling;
-    log_warning("TODO: wl_subsurface.place_above not implemented");
+    const auto sibling_surface = WlSurface::from(sibling);
+    if (!sibling_surface)
+    {
+        log_warning("Sibling surface is null");
+        return;
+    }
+
+    surface->move_child_above_sibling(this, sibling_surface);
 }
 
 void mf::WlSubsurface::place_below(struct wl_resource* sibling)
 {
-    (void)sibling;
-    log_warning("TODO: wl_subsurface.place_below not implemented");
+    const auto sibling_surface = WlSurface::from(sibling);
+    if (!sibling_surface)
+    {
+        log_warning("Sibling surface is null");
+        return;
+    }
+
+    surface->move_child_below_sibling(this, sibling_surface);
 }
 
 void mf::WlSubsurface::set_sync()
